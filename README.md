@@ -28,8 +28,8 @@ Following are the features covered by the scenario.
 # Setup each environment
 
 You can use the below docker compose commands.
-1. docker compose -f ballerina-docker-compose-db.yml up
-2. docker compose -f ballerina-docker-compose.yml up
+1. docker compose -f docker-compose-db.yml up
+2. docker compose -f docker-compose.yml up
 
 # Try out
 - To send request open `ballerina-social-media.http` file using VS Code with `REST Client` extension

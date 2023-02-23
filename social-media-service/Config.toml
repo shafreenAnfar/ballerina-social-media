@@ -1,13 +1,15 @@
 moderate = true
 
-database_user = "social_media_user"
-database_password = "dummypassword"
-host = "localhost"
-port = 3306
-
 [ballerina.observe]
 tracingEnabled=true
 tracingProvider="jaeger"
 
 [ballerinax.jaeger]
 samplerParam=1.0
+
+[social_media]
+host = "localhost"
+port = 3306
+user = "social_media_user"
+password = "dummypassword"
+database = "social_media_database"

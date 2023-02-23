@@ -7,7 +7,10 @@ distribution = "2201.3.1"
 [build-options]
 observabilityIncluded = true
 
-# [[platform.java11.dependency]]
-# artifactId = "h2"
-# version = "2.0.206"
-# groupId = "com.h2database"
+[persist.social_media.storage.mysql]
+host = "localhost"
+port = 3306
+user = "social_media_user"
+password = "dummypassword"
+database = "social_media_database"
+

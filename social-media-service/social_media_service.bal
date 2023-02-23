@@ -1,16 +1,11 @@
 import ballerina/http;
-import ballerina/sql;
-import ballerinax/mysql.driver as _;
-import ballerinax/mysql;
 import ballerina/log;
 import ballerinax/jaeger as _;
 import ballerina/time;
+import ballerina/random;
+import ballerina/persist;
 
 configurable boolean moderate = ?;
-configurable string database_user = ?;
-configurable string database_password = ?;
-configurable string host = ?;
-configurable int port = ?;
 
 listener http:Listener socialMediaListener = new (9090,
     interceptors = [new ResponseErrorInterceptor()]
@@ -18,11 +13,11 @@ listener http:Listener socialMediaListener = new (9090,
 
 service /social\-media on socialMediaListener {
 
-    final mysql:Client socialMediaDb;
+    final SocialMediaClient socialMediaClient;
     final http:Client sentimentEndpoint;
 
     public function init() returns error? {
-        self.socialMediaDb = check new (host = host, port = port, user = database_user, password = database_password, database = "social_media_database");
+        self.socialMediaClient = check new ();
         self.sentimentEndpoint = check new("localhost:9099", 
             retryConfig = {
                 interval: 3
@@ -35,7 +30,7 @@ service /social\-media on socialMediaListener {
     # 
     # + return - The list of users or error message
     resource function get users() returns User[]|error {
-        stream<User, sql:Error?> userStream = self.socialMediaDb->query(`SELECT * FROM users`);
+        stream<User, persist:Error?> userStream = self.socialMediaClient->/user();
         return from User user in userStream
             select user;
     }
@@ -45,8 +40,8 @@ service /social\-media on socialMediaListener {
     # + id - The user ID of the user to be retrived
     # + return - A specific user or error message
     resource function get users/[int id]() returns User|UserNotFound|error {
-        User|error result = self.socialMediaDb->queryRow(`SELECT * FROM users WHERE ID = ${id}`);
-        if result is sql:NoRowsError {
+        User|error result = self.socialMediaClient->/user/[id]();
+        if result is persist:InvalidKeyError {
             ErrorDetails errorDetails = buildErrorPayload(string `id: ${id}`, string `users/${id}/posts`);
             UserNotFound userNotFound = {
                 body: errorDetails
@@ -61,11 +56,16 @@ service /social\-media on socialMediaListener {
     # 
     # + newUser - The user details of the new user
     # + return - The created message or error message
-    resource function post users(@http:Payload NewUser newUser) returns http:Created|error {
-        _ = check self.socialMediaDb->execute(`
-            INSERT INTO users(birth_date, name)
-            VALUES (${newUser.birthDate}, ${newUser.name});`);
-        return http:CREATED;
+    resource function post users(@http:Payload NewUser newUser) returns UserCreated|error {
+        User user = {
+            id: check random:createIntInRange(1, 1000),
+            name: newUser.name,
+            birthDate: newUser.birthDate
+        };
+        int[] ids = check self.socialMediaClient->/user.post([user]);
+        return {
+            body: { message: "user created: " + ids[0].toString() }
+        };
     }
 
     # Delete a user
@@ -73,8 +73,7 @@ service /social\-media on socialMediaListener {
     # + id - The user ID of the user to be deleted
     # + return - The success message or error message
     resource function delete users/[int id]() returns http:NoContent|error {
-        _ = check self.socialMediaDb->execute(`
-            DELETE FROM users WHERE id = ${id};`);
+        _ = check self.socialMediaClient->/user/[id].delete();
         return http:NO_CONTENT;
     }
 
@@ -83,8 +82,8 @@ service /social\-media on socialMediaListener {
     # + id - The user ID for which posts are retrieved
     # + return - A list of posts or error message
     resource function get users/[int id]/posts() returns Post[]|UserNotFound|error {
-        User|error result = self.socialMediaDb->queryRow(`SELECT * FROM users WHERE id = ${id}`);
-        if result is sql:NoRowsError {
+        User|error result = self.socialMediaClient->/user/[id]();
+        if result is persist:InvalidKeyError {
             ErrorDetails errorDetails = buildErrorPayload(string `id: ${id}`, string `users/${id}/posts`);
             UserNotFound userNotFound = {
                 body: errorDetails
@@ -92,8 +91,8 @@ service /social\-media on socialMediaListener {
             return userNotFound;
         }
 
-        stream<Post, sql:Error?> postStream = self.socialMediaDb->query(`SELECT id, description, category, created_date, tags FROM posts WHERE user_id = ${id}`);
-        Post[]|error posts = from Post post in postStream
+        Post[]|error posts = from Post post in self.socialMediaClient->/post()
+            where post.userId == id
             select post;
         return posts;
     }
@@ -102,9 +101,9 @@ service /social\-media on socialMediaListener {
     # 
     # + id - The user ID for which the post is created
     # + return - The created message or error message
-    resource function post users/[int id]/posts(@http:Payload NewPost newPost) returns http:Created|UserNotFound|PostForbidden|error {
-        User|error result = self.socialMediaDb->queryRow(`SELECT * FROM users WHERE id = ${id}`);
-        if result is sql:NoRowsError {
+    resource function post users/[int id]/posts(@http:Payload NewPost newPost) returns PostCreated|UserNotFound|PostForbidden|error {
+        User|error result = self.socialMediaClient->/user/[id]();
+        if result is persist:InvalidKeyError {
             ErrorDetails errorDetails = buildErrorPayload(string `id: ${id}`, string `users/${id}/posts`);
             UserNotFound userNotFound = {
                 body: errorDetails
@@ -123,10 +122,17 @@ service /social\-media on socialMediaListener {
             return postForbidden;
         }
 
-        _ = check self.socialMediaDb->execute(`
-            INSERT INTO posts(description, category, created_date, tags, user_id)
-            VALUES (${newPost.description}, ${newPost.category}, CURDATE(), ${newPost.tags}, ${id});`);
-        return http:CREATED;
+        int[] ids = check self.socialMediaClient->/post.post([{
+            id: check random:createIntInRange(1, 1000),
+            description: newPost.description,
+            category: newPost.category,
+            created_date: time:utcToCivil(time:utcNow()),
+            tags: newPost.tags,
+            userId: id
+        }]);
+        return {
+            body: { message: "post created: " + ids[0].toString() }
+        };
     }
 }
 
