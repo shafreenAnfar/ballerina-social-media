@@ -11,3 +11,9 @@ observabilityIncluded = true
 # artifactId = "h2"
 # version = "2.0.206"
 # groupId = "com.h2database"
+
+[[dependency]]
+org = "com_example"
+name = "sentiment_analysis_client"
+version = "0.1.0"
+repository = "local"
