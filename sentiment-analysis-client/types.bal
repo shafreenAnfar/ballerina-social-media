@@ -29,6 +29,8 @@ public type ConnectionConfig record {|
     http:ClientSecureSocket secureSocket?;
     # Proxy server related options
     http:ProxyConfig proxy?;
+    # Configurations related to client authentication
+    http:ClientAuthConfig auth?;
     # Enables the inbound payload validation functionality which provided by the constraint package. Enabled by default
     boolean validation = true;
 |};
