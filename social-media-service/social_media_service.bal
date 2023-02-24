@@ -6,6 +6,7 @@ import ballerinax/mysql;
 import ballerina/log;
 import ballerinax/jaeger as _;
 import ballerina/time;
+import com_example/sentiment_analysis_client;
 
 type DataBaseConfig record {
     string host;
@@ -22,11 +23,12 @@ listener http:Listener socialMediaListener = new (9090,
 );
 
 final mysql:Client socialMediaDb = check initDbClient();
-final http:Client sentimentEndpoint = check new ("localhost:9099",
-    retryConfig = {
+
+final sentiment_analysis_client:Client sentimentEndpoint = check new(config = {
+    retryConfig: {
         interval: 3
     },
-    auth = {
+    auth: {
         refreshUrl: "https://localhost:9445/oauth2/token",
         refreshToken: "24f19603-8565-4b5f-a036-88a945e1f272",
         clientId: "FlfJYKBD2c925h4lkycqNZlC2l4a",
@@ -37,10 +39,10 @@ final http:Client sentimentEndpoint = check new ("localhost:9099",
             }
         }
     },
-    secureSocket = {
+    secureSocket: {
         cert: "./resources/public.crt"
     }
-);
+}, serviceUrl = "https://localhost:9099/text-processing");
 
 function initDbClient() returns mysql:Client|error {
     return new (host = databaseConfig.host, 
@@ -137,7 +139,7 @@ service /social\-media on socialMediaListener {
             return userNotFound;
         }
 
-        Sentiment sentiment = check sentimentEndpoint->/text\-processing/api/sentiment.post(
+        Sentiment sentiment = check sentimentEndpoint->/api/sentiment.post(
             {text: newPost.description}
         );
         if sentiment.label == "neg" {
