@@ -1,0 +1,8 @@
+[package]
+org = "com_example"
+name = "sentiment_analysis_client"
+version = "0.1.0"
+distribution = "2201.3.2"
+
+[build-options]
+observabilityIncluded = true
