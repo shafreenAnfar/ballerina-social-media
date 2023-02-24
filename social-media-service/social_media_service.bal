@@ -8,13 +8,13 @@ import ballerinax/jaeger as _;
 import ballerina/time;
 import com_example/sentiment_analysis_client;
 
-type DataBaseConfig record {
+type DataBaseConfig record {|
     string host;
     int port;
     string user;
     string password;
     string database;
-};
+|};
 configurable DataBaseConfig databaseConfig = ?;
 configurable boolean moderate = ?;
 
@@ -45,14 +45,10 @@ final sentiment_analysis_client:Client sentimentEndpoint = check new(config = {
 }, serviceUrl = "https://localhost:9099/text-processing");
 
 function initDbClient() returns mysql:Client|error {
-    return new (host = databaseConfig.host, 
-                port = databaseConfig.port, 
-                user = databaseConfig.user, 
-                password = databaseConfig.password, 
-                database = databaseConfig.database);
+    return new (...databaseConfig);
 }
 
-service /social\-media on socialMediaListener {
+service SocialMedia /social\-media on socialMediaListener {
 
     public function init() returns error? {
         log:printInfo("Social media service started");
@@ -130,13 +126,16 @@ service /social\-media on socialMediaListener {
     # + id - The user ID for which the post is created
     # + return - The created message or error message
     resource function post users/[int id]/posts(@http:Payload NewPost newPost) returns http:Created|UserNotFound|PostForbidden|error {
-        User|error result = socialMediaDb->queryRow(`SELECT * FROM users WHERE id = ${id}`);
-        if result is sql:NoRowsError {
+        User|error user = socialMediaDb->queryRow(`SELECT * FROM users WHERE id = ${id}`);
+        if user is sql:NoRowsError {
             ErrorDetails errorDetails = buildErrorPayload(string `id: ${id}`, string `users/${id}/posts`);
             UserNotFound userNotFound = {
                 body: errorDetails
             };
             return userNotFound;
+        }
+        if user is error {
+            return user;
         }
 
         Sentiment sentiment = check sentimentEndpoint->/api/sentiment.post(
@@ -153,18 +152,16 @@ service /social\-media on socialMediaListener {
         _ = check socialMediaDb->execute(`
             INSERT INTO posts(description, category, created_date, tags, user_id)
             VALUES (${newPost.description}, ${newPost.category}, CURDATE(), ${newPost.tags}, ${id});`);
+        check sendSmsToFollowers(user);
         return http:CREATED;
     }
 }
 
-function buildErrorPayload(string msg, string path) returns ErrorDetails {
-    ErrorDetails errorDetails = {
+function buildErrorPayload(string msg, string path) returns ErrorDetails => {
         message: msg,
         timeStamp: time:utcNow(),
         details: string `uri=${path}`
     };
-    return errorDetails;
-}
 
 function postMeta(Post[] post) returns PostMeta[] => from var postItem in post
     select {
