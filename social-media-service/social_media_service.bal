@@ -6,7 +6,7 @@ import ballerinax/mysql;
 import ballerina/log;
 import ballerinax/jaeger as _;
 import ballerina/time;
-import com_example/sentiment_analysis_client;
+import balsample/sentiment_analysis_client;
 
 configurable boolean moderate = ?;
 
