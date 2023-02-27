@@ -1,5 +1,5 @@
 [package]
-org = "com_example"
+org = "balsample"
 name = "sentiment_analysis_client"
 version = "0.1.0"
 distribution = "2201.3.2"

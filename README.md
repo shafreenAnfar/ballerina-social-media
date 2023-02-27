@@ -8,6 +8,24 @@ Following is the entity relationship diagram.
 
 <img src="er.png" alt="drawing" width='700'/>
 
+Following is the service description.
+
+```ballerina
+type SocialMedia service object {
+    *http:Service;
+
+    // users resource
+    resource function get users() returns User[]|error;
+    resource function get users/[int id]() returns User|UserNotFound|error;
+    resource function post users(@http:Payload NewUser newUser) returns http:Created|error;
+    resource function delete users/[int id]() returns http:NoContent|error;
+
+    // posts resource
+    resource function get users/[int id]/posts() returns PostMeta[]|UserNotFound|error;
+    resource function post users/[int id]/posts(@http:Payload NewPost newPost) returns http:Created|UserNotFound|PostForbidden|error;
+};
+```
+
 Following are the features covered by the scenario.
 
 1. Writing REST APIs with verbs, URLs, databinging and statuscodes
@@ -15,13 +33,13 @@ Following are the features covered by the scenario.
 3. Configurability
 4. Data transformation with datamapper
 5. HTTP client
-6. Writing tests
-7. Using connectors - twillio
-8. OpenAPI specification, client stubs and central
-9. Adding constraints/validations
-10. Security - OAuth2
-11. Error handlers
-12. Resiliency - Retry
+6. Resiliency - Retry
+7. Writing tests
+8. Using connectors - Twillio
+9. OpenAPI specification, client stubs and central
+10. Adding validations
+11. Security - OAuth2
+12. Error handlers
 13. Observability - Tracing
 14. Docker image generation
 
