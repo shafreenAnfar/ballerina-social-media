@@ -1,5 +1,4 @@
 moderate = true
-natsUrl = "nats://localhost:4222"
 enableSmsNotification = true
 
 [databaseConfig]
