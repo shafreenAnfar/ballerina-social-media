@@ -33,13 +33,6 @@ final http:Client sentimentEndpoint = check new ("localhost:9099",
     }
 );
 
-configurable string natsUrl = ?;
-final nats:Client natsClient = check new (natsUrl, retryConfig = {
-    maxReconnect: 10,
-    reconnectWait: 10,
-    connectionTimeout: 30
-});
-
 listener http:Listener socialMediaListener = new (9090,
     interceptors = [new ResponseErrorInterceptor()]
 );
