@@ -25,20 +25,9 @@ final mysql:Client socialMediaDb = check initDbClient();
 function initDbClient() returns mysql:Client|error => new (...databaseConfig);
 
 final http:Client sentimentEndpoint = check new ("localhost:9099",
-retryConfig = {
-    interval: 3
-},
-auth = {
-    refreshUrl: "https://localhost:9445/oauth2/token",
-    refreshToken: "24f19603-8565-4b5f-a036-88a945e1f272",
-    clientId: "FlfJYKBD2c925h4lkycqNZlC2l4a",
-    clientSecret: "PJz0UhTJMrHOo68QQNpvnqAY_3Aa",
-    clientConfig: {
-        secureSocket: {
-            cert: "./resources/public.crt"
-        }
-    }
-},
+    retryConfig = {
+        interval: 3
+    },
     secureSocket = {
         cert: "./resources/public.crt"
     }
