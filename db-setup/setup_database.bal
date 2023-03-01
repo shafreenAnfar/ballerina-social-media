@@ -40,7 +40,7 @@ public function main() returns sql:Error? {
     _ = check mysqlClient->execute(`INSERT INTO social_media_database.users(id, birth_date, name, mobile_number)
                                     VALUES(3, CURDATE(), "Satish", "+94771234001");`);
     _ = check mysqlClient->execute(`INSERT INTO social_media_database.users(id, birth_date, name, mobile_number)
-                                    VALUES(4, CURDATE(), "Ayesh", "+94768787189");`);                               
+                                    VALUES(4, CURDATE(), "Ayesh", "+94756485071");`);                               
 
 
     // Adds the records to the `posts` table.
